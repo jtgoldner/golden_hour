@@ -435,18 +435,28 @@ $('goBtn').addEventListener('click',()=>run());
 $('loc').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
 dateInput.addEventListener('change',()=>{ if(!$('result').classList.contains('hidden')||$('loc').value.trim()) run(); });
 $('locateBtn').addEventListener('click',()=>{
-  if(!navigator.geolocation){setStatus('Geolocation isn’t available in this browser.',true);return;}
+  if(!navigator.geolocation){setStatus('This browser can’t share a location. Type a ZIP or town instead.',true);return;}
   setStatus('Locating you…',false);
   navigator.geolocation.getCurrentPosition(async pos=>{
     const {latitude:lat,longitude:lon}=pos.coords;
+    // standing where you are, the browser's own zone is the right one
     const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
     let name='Your location',region='';
-    try{ // reverse-ish label via Open-Meteo (best effort)
-      const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?latitude=${lat}&longitude=${lon}&count=1&language=en`);
-      const j=await r.json(); if(j.results&&j.results[0]){name=j.results[0].name;region=j.results[0].admin1||'';}
+    try{ // no-key reverse geocode (coords -> place name)
+      const r=await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=en`);
+      if(r.ok){
+        const j=await r.json();
+        name=j.city||j.locality||j.principalSubdivision||'Your location';
+        region=(j.principalSubdivisionCode||'').replace(/^[A-Z]{2}-/,'')||j.principalSubdivision||'';
+      }
     }catch{}
     run({lat,lon,tz,name,region,country:''});
-  },()=>setStatus('Couldn’t get your location. Type a ZIP or town instead.',true),{timeout:8000});
+  },err=>{
+    const m={1:'Location access was blocked. Allow it in your browser settings, or type a ZIP or town.',
+             2:'Your location is unavailable right now. Type a ZIP or town instead.',
+             3:'Locating timed out. Try once more, or type a ZIP or town.'};
+    setStatus(m[err.code]||'Couldn’t get your location. Type a ZIP or town instead.',true);
+  },{enableHighAccuracy:true,timeout:12000,maximumAge:60000});
 });
 </script>
 </body>
