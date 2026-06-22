@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Golden Hour</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E0B1A;
+    --bg2:#150F26;
+    --surface:#1B1530;
+    --surface-2:#241C3D;
+    --line:rgba(245,236,221,.10);
+    --gold:#FFB84D;
+    --gold-deep:#F5A623;
+    --blue:#6E8BD8;
+    --blue-deep:#4C63A8;
+    --text:#F4EEE0;
+    --muted:#9A90B3;
+    --muted-2:#6F6688;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:
+      radial-gradient(120% 80% at 50% -10%, rgba(245,166,35,.10), transparent 55%),
+      radial-gradient(120% 90% at 50% 120%, rgba(76,99,168,.16), transparent 55%),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    padding:32px 20px 64px;
+  }
+  .wrap{width:100%;max-width:520px}
+
+  header{text-align:center;margin-bottom:26px}
+  .eyebrow{
+    font-size:11px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--muted);font-weight:600;margin-bottom:10px;
+  }
+  h1{
+    font-family:'Fraunces',serif;font-weight:900;font-size:46px;line-height:.98;
+    letter-spacing:-.01em;
+    background:linear-gradient(100deg,#FFD98A,var(--gold) 38%,#FF9E5E 78%,#C77BB0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .tagline{color:var(--muted);font-size:14px;margin-top:10px}
+
+  /* ---- search ---- */
+  .search{margin:0 0 22px}
+  .field{
+    display:flex;gap:8px;
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:16px;padding:7px 7px 7px 16px;
+    box-shadow:0 8px 30px rgba(0,0,0,.35);
+  }
+  .field input[type=text]{
+    flex:1;background:none;border:none;outline:none;color:var(--text);
+    font-size:16px;font-family:inherit;min-width:0;
+  }
+  .field input::placeholder{color:var(--muted-2)}
+  .go{
+    border:none;cursor:pointer;flex:none;
+    background:linear-gradient(135deg,var(--gold),var(--gold-deep));
+    color:#231600;font-weight:600;font-size:15px;font-family:inherit;
+    padding:0 18px;border-radius:11px;transition:filter .15s,transform .05s;
+  }
+  .go:hover{filter:brightness(1.06)}
+  .go:active{transform:translateY(1px)}
+  .subrow{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:11px;gap:12px;flex-wrap:wrap;
+  }
+  .locate{
+    background:none;border:none;color:var(--gold);cursor:pointer;
+    font-size:13px;font-family:inherit;font-weight:500;
+    display:inline-flex;align-items:center;gap:6px;padding:4px 0;
+  }
+  .locate:hover{color:#FFD98A}
+  .datewrap{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px}
+  input[type=date]{
+    background:var(--surface);border:1px solid var(--line);color:var(--text);
+    font-family:inherit;font-size:13px;border-radius:9px;padding:6px 9px;
+    color-scheme:dark;
+  }
+
+  /* ---- states ---- */
+  .msg{
+    text-align:center;color:var(--muted);font-size:14px;
+    padding:30px 10px;line-height:1.6;
+  }
+  .msg.err{color:#FF9B8A}
+  .hidden{display:none}
+
+  /* ---- result ---- */
+  .result-head{text-align:center;margin:6px 0 20px}
+  .place{font-family:'Fraunces',serif;font-weight:600;font-size:24px}
+  .place .state{color:var(--muted)}
+  .meta{color:var(--muted);font-size:13px;margin-top:5px}
+
+  /* arc */
+  .arc-card{
+    background:linear-gradient(180deg,var(--surface),var(--bg2));
+    border:1px solid var(--line);border-radius:20px;
+    padding:18px 16px 10px;margin-bottom:18px;overflow:hidden;
+  }
+  .arc-svg{width:100%;height:auto;display:block}
+  .arc-ends{
+    display:flex;justify-content:space-between;
+    color:var(--muted);font-size:12px;margin-top:2px;padding:0 4px;
+  }
+
+  /* window cards */
+  .windows{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .card{
+    background:var(--surface);border:1px solid var(--line);
+    border-radius:18px;padding:16px 16px 18px;position:relative;overflow:hidden;
+  }
+  .card::before{
+    content:"";position:absolute;inset:0 auto 0 0;width:3px;
+  }
+  .card.gold::before{background:linear-gradient(var(--gold),var(--gold-deep))}
+  .card.blue::before{background:linear-gradient(var(--blue),var(--blue-deep))}
+  .card .kind{
+    font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+    font-weight:600;margin-bottom:9px;
+  }
+  .card.gold .kind{color:var(--gold)}
+  .card.blue .kind{color:var(--blue)}
+  .card .when{font-size:12px;color:var(--muted);margin-bottom:3px}
+  .card .time{
+    font-family:'Fraunces',serif;font-weight:600;font-size:19px;
+    letter-spacing:-.01em;line-height:1.25;
+  }
+  .card .dur{font-size:12px;color:var(--muted-2);margin-top:8px}
+  .card .pair{margin-top:12px}
+
+  .footnote{
+    text-align:center;color:var(--muted-2);font-size:11.5px;
+    margin-top:22px;line-height:1.6;
+  }
+  .loading{opacity:.55;pointer-events:none}
+  @media (max-width:420px){
+    h1{font-size:38px}
+    .windows{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Find the light</div>
+    <h1>Golden Hour</h1>
+    <p class="tagline">Morning &amp; evening golden hour for any location.</p>
+  </header>
+
+  <div class="search">
+    <div class="field">
+      <input id="loc" type="text" placeholder="ZIP, or town &amp; state" autocomplete="off" />
+      <button class="go" id="goBtn">Find</button>
+    </div>
+    <div class="subrow">
+      <button class="locate" id="locateBtn">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="10" r="3"/><path d="M12 2a8 8 0 0 0-8 8c0 5.5 8 12 8 12s8-6.5 8-12a8 8 0 0 0-8-8z"/></svg>
+        Use my location
+      </button>
+      <div class="datewrap">
+        <label for="date">Date</label>
+        <input id="date" type="date" />
+      </div>
+    </div>
+  </div>
+
+  <div id="intro" class="msg">Enter a location to see today’s golden and blue hour windows.</div>
+  <div id="status" class="msg hidden"></div>
+
+  <div id="result" class="hidden">
+    <div class="result-head">
+      <div class="place" id="placeName"></div>
+      <div class="meta" id="placeMeta"></div>
+    </div>
+
+    <div class="arc-card">
+      <svg class="arc-svg" id="arc" viewBox="0 0 520 150" preserveAspectRatio="xMidYMid meet"></svg>
+      <div class="arc-ends"><span id="arcStart"></span><span id="arcEnd"></span></div>
+    </div>
+
+    <div class="windows">
+      <div class="card gold">
+        <div class="kind">Morning golden</div>
+        <div class="when">Begins</div>
+        <div class="time" id="mgStart">—</div>
+        <div class="pair"><div class="when">Ends</div><div class="time" id="mgEnd">—</div></div>
+        <div class="dur" id="mgDur"></div>
+      </div>
+      <div class="card gold">
+        <div class="kind">Evening golden</div>
+        <div class="when">Begins</div>
+        <div class="time" id="egStart">—</div>
+        <div class="pair"><div class="when">Ends</div><div class="time" id="egEnd">—</div></div>
+        <div class="dur" id="egDur"></div>
+      </div>
+      <div class="card blue">
+        <div class="kind">Morning blue</div>
+        <div class="when">Begins</div>
+        <div class="time" id="mbStart">—</div>
+        <div class="pair"><div class="when">Ends</div><div class="time" id="mbEnd">—</div></div>
+      </div>
+      <div class="card blue">
+        <div class="kind">Evening blue</div>
+        <div class="when">Begins</div>
+        <div class="time" id="ebStart">—</div>
+        <div class="pair"><div class="when">Ends</div><div class="time" id="ebEnd">—</div></div>
+      </div>
+    </div>
+
+    <div class="footnote" id="sunline"></div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Solar geometry  (SunCalc algorithm, MIT — Vladimir Agafonkin)
+   Inlined so the app has zero runtime dependencies / no keys.
+   ============================================================ */
+const PI=Math.PI, rad=PI/180, dayMs=864e5, J1970=2440588, J2000=2451545;
+const e=rad*23.4397;
+const toJulian=d=>d.valueOf()/dayMs-0.5+J1970;
+const fromJulian=j=>new Date((j+0.5-J1970)*dayMs);
+const toDays=d=>toJulian(d)-J2000;
+const declination=(l,b)=>Math.asin(Math.sin(b)*Math.cos(e)+Math.cos(b)*Math.sin(e)*Math.sin(l));
+const solarMeanAnomaly=d=>rad*(357.5291+0.98560028*d);
+function eclipticLongitude(M){
+  const C=rad*(1.9148*Math.sin(M)+0.02*Math.sin(2*M)+0.0003*Math.sin(3*M));
+  return M+C+rad*102.9372+PI;
+}
+const J0=0.0009;
+const approxTransit=(Ht,lw,n)=>J0+(Ht+lw)/(2*PI)+n;
+const solarTransitJ=(ds,M,L)=>J2000+ds+0.0053*Math.sin(M)-0.0069*Math.sin(2*L);
+const hourAngle=(h,phi,dec)=>Math.acos((Math.sin(h)-Math.sin(phi)*Math.sin(dec))/(Math.cos(phi)*Math.cos(dec)));
+
+function sunTimes(date,lat,lng){
+  const lw=rad*-lng, phi=rad*lat, d=toDays(date);
+  const n=Math.round(d-J0-lw/(2*PI));
+  const ds=approxTransit(0,lw,n);
+  const M=solarMeanAnomaly(ds);
+  const L=eclipticLongitude(M);
+  const dec=declination(L,0);
+  const Jnoon=solarTransitJ(ds,M,L);
+  // returns {rise,set} for a given sun altitude in degrees
+  return function(angleDeg){
+    const w=hourAngle(angleDeg*rad,phi,dec);
+    if(isNaN(w)) return {rise:null,set:null};
+    const Jset=solarTransitJ(approxTransit(w,lw,n),M,L);
+    const Jrise=Jnoon-(Jset-Jnoon);
+    return {rise:fromJulian(Jrise),set:fromJulian(Jset)};
+  };
+}
+
+/* ============================================================
+   Timezone helpers — compute "local noon" instant at a place,
+   and format any instant in that place's zone.
+   ============================================================ */
+function tzOffsetMs(tz,date){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,
+    year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',second:'2-digit'})
+    .formatToParts(date).reduce((a,x)=>(a[x.type]=x.value,a),{});
+  const asUTC=Date.UTC(p.year,p.month-1,p.day,p.hour==='24'?0:p.hour,p.minute,p.second);
+  return asUTC-date.getTime();
+}
+function noonAt(y,m,d,tz){
+  const guess=Date.UTC(y,m-1,d,12);
+  return new Date(guess-tzOffsetMs(tz,new Date(guess)));
+}
+function fmt(date,tz){
+  if(!date||isNaN(date.getTime())) return '—';
+  return new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',minute:'2-digit',hour12:true}).format(date);
+}
+function tzAbbr(date,tz){
+  const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,timeZoneName:'short'}).formatToParts(date);
+  const z=p.find(x=>x.type==='timeZoneName'); return z?z.value:'';
+}
+function minsBetween(a,b){ if(!a||!b||isNaN(a)||isNaN(b)) return null; return Math.round((b-a)/60000); }
+function durLabel(m){ if(m==null) return ''; const h=Math.floor(m/60),mm=m%60; return (h?h+'h ':'')+mm+'m of light'; }
+
+/* ============================================================
+   Geocoding — no API key.
+   ZIP -> Zippopotam ; names -> Open-Meteo geocoder.
+   ============================================================ */
+async function geocode(query){
+  const q=query.trim();
+  if(/^\d{5}$/.test(q)){
+    const r=await fetch(`https://api.zippopotam.us/us/${q}`);
+    if(!r.ok) throw new Error(`No US ZIP matched “${q}”.`);
+    const j=await r.json(); const p=j.places&&j.places[0];
+    if(!p) throw new Error(`No US ZIP matched “${q}”.`);
+    const lat=+p.latitude, lon=+p.longitude;
+    const tz=await tzForCoords(lat,lon);
+    return {lat,lon,tz,name:p['place name'],region:p['state abbreviation']||p.state||'',country:'US'};
+  }
+  // name search (handles "Austin", "Austin, TX", "Brooklyn NY", etc.)
+  let res=await omGeocode(q);
+  if(!res && q.includes(',')) res=await omGeocode(q.split(',')[0].trim());
+  if(!res) throw new Error(`Couldn’t find “${q}”. Try a ZIP, or “Town, State”.`);
+  return res;
+}
+async function omGeocode(name){
+  const u=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
+  const r=await fetch(u); if(!r.ok) return null;
+  const j=await r.json(); const g=j.results&&j.results[0];
+  if(!g) return null;
+  return {lat:g.latitude,lon:g.longitude,tz:g.timezone||'UTC',
+          name:g.name,region:g.admin1||'',country:g.country_code||''};
+}
+async function tzForCoords(lat,lon){
+  try{
+    const u=`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=sunrise&forecast_days=1&timezone=auto`;
+    const r=await fetch(u); const j=await r.json();
+    return j.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;
+  }catch{ return Intl.DateTimeFormat().resolvedOptions().timeZone; }
+}
+
+/* ============================================================
+   Render
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const dateInput=$('date');
+(function initDate(){const n=new Date();dateInput.value=`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;})();
+
+function show(el){el.classList.remove('hidden')}
+function hide(el){el.classList.add('hidden')}
+function setStatus(t,err){const s=$('status');s.textContent=t;s.className='msg'+(err?' err':'');show(s);hide($('intro'));hide($('result'));}
+
+async function run(place){
+  show($('search'));
+  setStatus('Finding the light…',false);
+  try{
+    const g = place || await geocode($('loc').value);
+    const [y,m,d]=dateInput.value.split('-').map(Number);
+    const noon=noonAt(y,m,d,g.tz);
+    const t=sunTimes(noon,g.lat,g.lon);
+
+    const sun   = t(-0.833);
+    const gold  = t(6);     // upper edge of golden hour
+    const dawn4 = t(-4);    // golden lower edge
+    const blue6 = t(-6);    // blue hour outer edge
+
+    const W={
+      mbStart:blue6.rise, mbEnd:dawn4.rise,           // morning blue
+      mgStart:dawn4.rise, mgEnd:gold.rise,            // morning golden
+      egStart:gold.set,   egEnd:dawn4.set,            // evening golden
+      ebStart:dawn4.set,  ebEnd:blue6.set,            // evening blue
+      sunrise:sun.rise,   sunset:sun.set
+    };
+
+    // header
+    $('placeName').innerHTML = `${g.name}${g.region?`<span class="state">, ${g.region}</span>`:''}`;
+    const dStr=new Intl.DateTimeFormat('en-US',{weekday:'short',month:'short',day:'numeric',timeZone:g.tz}).format(noon);
+    $('placeMeta').textContent = `${dStr} · times in ${tzAbbr(noon,g.tz)}`;
+
+    // cards
+    const tz=g.tz;
+    $('mgStart').textContent=fmt(W.mgStart,tz); $('mgEnd').textContent=fmt(W.mgEnd,tz);
+    $('egStart').textContent=fmt(W.egStart,tz); $('egEnd').textContent=fmt(W.egEnd,tz);
+    $('mbStart').textContent=fmt(W.mbStart,tz); $('mbEnd').textContent=fmt(W.mbEnd,tz);
+    $('ebStart').textContent=fmt(W.ebStart,tz); $('ebEnd').textContent=fmt(W.ebEnd,tz);
+    $('mgDur').textContent=durLabel(minsBetween(W.mgStart,W.mgEnd));
+    $('egDur').textContent=durLabel(minsBetween(W.egStart,W.egEnd));
+    $('sunline').textContent = (W.sunrise&&W.sunset)
+      ? `Sunrise ${fmt(W.sunrise,tz)} · Sunset ${fmt(W.sunset,tz)}`
+      : 'The sun doesn’t cross these angles here on this date.';
+
+    drawArc(W,tz);
+
+    hide($('status')); show($('result'));
+  }catch(err){
+    setStatus(err.message||'Something went wrong. Try a different location.',true);
+  }
+}
+
+/* signature element: sun-path arc, glowing gold & blue in the windows */
+function drawArc(W,tz){
+  const svg=$('arc'); const Wd=520,Ht=150,pad=18,base=Ht-26;
+  const axisStart=W.mbStart, axisEnd=W.ebEnd;
+  $('arcStart').textContent=fmt(axisStart,tz);
+  $('arcEnd').textContent=fmt(axisEnd,tz);
+  if(!axisStart||!axisEnd||isNaN(axisStart)||isNaN(axisEnd)){ svg.innerHTML=''; return; }
+  const span=axisEnd-axisStart;
+  const fx=t=>pad+( (t-axisStart)/span )*(Wd-2*pad);
+  const arcY=x=>{ const p=(x-pad)/(Wd-2*pad); return base-Math.sin(Math.max(0,Math.min(1,p))*PI)*(base-14); };
+  const stop=(t,c)=>`<stop offset="${(((t-axisStart)/span)*100).toFixed(2)}%" stop-color="${c}"/>`;
+
+  // gradient stops follow the real boundary times
+  const grad=`<linearGradient id="lg" x1="0" y1="0" x2="1" y2="0">
+    ${stop(W.mbStart,'#4C63A8')}${stop(W.mbEnd,'#6E8BD8')}
+    ${stop(W.mgStart,'#FFB84D')}${stop(W.mgEnd,'#FFE6B0')}
+    ${stop(W.egStart,'#FFE6B0')}${stop(W.egEnd,'#FFB84D')}
+    ${stop(W.ebStart,'#6E8BD8')}${stop(W.ebEnd,'#4C63A8')}
+  </linearGradient>`;
+
+  // build arc path
+  let dpath=`M ${pad} ${arcY(pad).toFixed(1)}`;
+  for(let x=pad;x<=Wd-pad;x+=6) dpath+=` L ${x} ${arcY(x).toFixed(1)}`;
+
+  // horizon + sun marker (only meaningful if viewing today)
+  const now=Date.now();
+  let sun='';
+  if(now>=axisStart && now<=axisEnd){
+    const sx=fx(now), sy=arcY(sx);
+    sun=`<circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="6" fill="#FFE6B0"/>
+         <circle cx="${sx.toFixed(1)}" cy="${sy.toFixed(1)}" r="11" fill="#FFB84D" opacity=".25"/>`;
+  }
+  const sr=fx(W.sunrise), ss=fx(W.sunset);
+
+  svg.innerHTML=`<defs>${grad}
+    <filter id="glow" x="-20%" y="-50%" width="140%" height="200%">
+      <feGaussianBlur stdDeviation="3.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter></defs>
+    <line x1="${pad}" y1="${base}" x2="${Wd-pad}" y2="${base}" stroke="rgba(244,238,224,.14)" stroke-width="1"/>
+    <path d="${dpath}" fill="none" stroke="url(#lg)" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+    <circle cx="${sr.toFixed(1)}" cy="${base}" r="2.5" fill="#9A90B3"/>
+    <circle cx="${ss.toFixed(1)}" cy="${base}" r="2.5" fill="#9A90B3"/>
+    ${sun}`;
+}
+
+/* ---- events ---- */
+$('goBtn').addEventListener('click',()=>run());
+$('loc').addEventListener('keydown',e=>{if(e.key==='Enter')run();});
+dateInput.addEventListener('change',()=>{ if(!$('result').classList.contains('hidden')||$('loc').value.trim()) run(); });
+$('locateBtn').addEventListener('click',()=>{
+  if(!navigator.geolocation){setStatus('Geolocation isn’t available in this browser.',true);return;}
+  setStatus('Locating you…',false);
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude:lat,longitude:lon}=pos.coords;
+    const tz=Intl.DateTimeFormat().resolvedOptions().timeZone;
+    let name='Your location',region='';
+    try{ // reverse-ish label via Open-Meteo (best effort)
+      const r=await fetch(`https://geocoding-api.open-meteo.com/v1/search?latitude=${lat}&longitude=${lon}&count=1&language=en`);
+      const j=await r.json(); if(j.results&&j.results[0]){name=j.results[0].name;region=j.results[0].admin1||'';}
+    }catch{}
+    run({lat,lon,tz,name,region,country:''});
+  },()=>setStatus('Couldn’t get your location. Type a ZIP or town instead.',true),{timeout:8000});
+});
+</script>
+</body>
+</html>
