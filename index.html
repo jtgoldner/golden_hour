@@ -339,7 +339,6 @@ function hide(el){el.classList.add('hidden')}
 function setStatus(t,err){const s=$('status');s.textContent=t;s.className='msg'+(err?' err':'');show(s);hide($('intro'));hide($('result'));}
 
 async function run(place){
-  show($('search'));
   setStatus('Finding the light…',false);
   try{
     const g = place || await geocode($('loc').value);
