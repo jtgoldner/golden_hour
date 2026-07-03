@@ -3,7 +3,51 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Golden Hour</title>
+
+<title>Magic Hour — Golden Hour &amp; Twilight Finder for Photographers</title>
+<meta name="description" content="Find exact golden hour and twilight times for any location. Enter a ZIP code or city and get morning and evening light windows for photography, film, and video." />
+<link rel="canonical" href="https://isthelight.gold/" />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://isthelight.gold/" />
+<meta property="og:title" content="Magic Hour — Golden Hour &amp; Twilight Finder" />
+<meta property="og:description" content="Find exact golden hour and twilight times for any location. Perfect for photographers, filmmakers, and videographers." />
+<meta property="og:image" content="https://isthelight.gold/og-image.png" />
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Magic Hour — Golden Hour &amp; Twilight Finder" />
+<meta name="twitter:description" content="Find exact golden hour and twilight times for any location." />
+<meta name="twitter:image" content="https://isthelight.gold/og-image.png" />
+
+<!-- Google Search Console verification — replace content value after creating GSC property -->
+<meta name="google-site-verification" content="REPLACE_WITH_GSC_VERIFICATION_CODE" />
+
+<!-- JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Magic Hour",
+  "url": "https://isthelight.gold/",
+  "description": "Find exact golden hour and twilight times for any location. Perfect for photographers, filmmakers, and videographers.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "author": { "@type": "Person", "name": "Jonathan Goldner", "url": "https://jonathangoldner.com" }
+}
+</script>
+
+<!-- Google Analytics 4 — replace GA_MEASUREMENT_ID after creating GA4 property -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'GA_MEASUREMENT_ID');
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -145,6 +189,20 @@
     text-align:center;color:var(--muted-2);font-size:11.5px;
     margin-top:22px;line-height:1.6;
   }
+  .bmc-wrap{text-align:center;margin-top:22px}
+  .bmc-btn{
+    display:inline-block;background:var(--surface);border:1px solid var(--line);
+    color:var(--gold);font-size:13px;font-weight:500;font-family:inherit;
+    padding:9px 18px;border-radius:12px;text-decoration:none;
+    transition:background .15s,border-color .15s;
+  }
+  .bmc-btn:hover{background:var(--surface-2);border-color:var(--gold)}
+  footer{
+    text-align:center;color:var(--muted-2);font-size:11px;
+    padding:28px 20px 0;max-width:520px;margin:0 auto;line-height:1.7;
+  }
+  footer a{color:var(--muted-2);text-decoration:underline;text-underline-offset:2px}
+  footer a:hover{color:var(--muted)}
   .loading{opacity:.55;pointer-events:none}
   @media (max-width:420px){
     h1{font-size:38px}
@@ -177,7 +235,7 @@
     </div>
   </div>
 
-  <div id="intro" class="msg">Enter a location to see today’s golden and blue hour windows.</div>
+  <div id="intro" class="msg">Enter a location to see today’s golden hour and twilight windows.</div>
   <div id="status" class="msg hidden"></div>
 
   <div id="result" class="hidden">
@@ -207,13 +265,13 @@
         <div class="dur" id="egDur"></div>
       </div>
       <div class="card blue">
-        <div class="kind">Morning blue</div>
+        <div class="kind">Morning twilight</div>
         <div class="when">Begins</div>
         <div class="time" id="mbStart">—</div>
         <div class="pair"><div class="when">Ends</div><div class="time" id="mbEnd">—</div></div>
       </div>
       <div class="card blue">
-        <div class="kind">Evening blue</div>
+        <div class="kind">Evening twilight</div>
         <div class="when">Begins</div>
         <div class="time" id="ebStart">—</div>
         <div class="pair"><div class="when">Ends</div><div class="time" id="ebEnd">—</div></div>
@@ -221,8 +279,19 @@
     </div>
 
     <div class="footnote" id="sunline"></div>
+
+    <div class="bmc-wrap">
+      <a class="bmc-btn" href="https://buymeacoffee.com/jonathangoldner" target="_blank" rel="noopener">
+        ☕ Buy me a coffee
+      </a>
+    </div>
   </div>
 </div>
+
+<footer>
+  <p>&copy; <span id="yr"></span> Jonathan Goldner. Solar math: <a href="https://github.com/mourner/suncalc" target="_blank" rel="noopener">SunCalc</a> (MIT).</p>
+</footer>
+<script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
 
 <script>
 /* ============================================================
@@ -305,19 +374,53 @@ async function geocode(query){
     const tz=await tzForCoords(lat,lon);
     return {lat,lon,tz,name:p['place name'],region:p['state abbreviation']||p.state||'',country:'US'};
   }
-  // name search (handles "Austin", "Austin, TX", "Brooklyn NY", etc.)
-  let res=await omGeocode(q);
-  if(!res && q.includes(',')) res=await omGeocode(q.split(',')[0].trim());
-  if(!res) throw new Error(`Couldn’t find “${q}”. Try a ZIP, or “Town, State”.`);
-  return res;
-}
-async function omGeocode(name){
-  const u=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=1&language=en&format=json`;
-  const r=await fetch(u); if(!r.ok) return null;
-  const j=await r.json(); const g=j.results&&j.results[0];
-  if(!g) return null;
+  // name search: parse "City, ST" / "City State", then prefer the named state
+  const {city,stateName}=parseQuery(q);
+  let results=await omSearch(city, stateName?100:10);
+  if(!results.length && city!==q) results=await omSearch(q,10); // fallback to raw
+  if(!results.length) throw new Error(`Couldn’t find “${q}”. Try “Town, ST” or a ZIP.`);
+
+  let g;
+  if(stateName){
+    const sn=stateName.toLowerCase();
+    g = results.find(r=>r.country_code==='US' && (r.admin1||'').toLowerCase()===sn)
+     || results.find(r=>r.country_code==='US' && (r.admin1||'').toLowerCase().includes(sn));
+    if(!g) throw new Error(`Couldn’t find “${city}” in ${stateName}. Check the spelling?`);
+  } else {
+    const exact=results.filter(r=>r.name.toLowerCase()===city.toLowerCase());
+    g = exact.find(r=>r.country_code==='US') || exact[0]
+      || results.find(r=>r.country_code==='US') || results[0];
+  }
   return {lat:g.latitude,lon:g.longitude,tz:g.timezone||'UTC',
           name:g.name,region:g.admin1||'',country:g.country_code||''};
+}
+
+const US_STATES={al:'Alabama',ak:'Alaska',az:'Arizona',ar:'Arkansas',ca:'California',co:'Colorado',ct:'Connecticut',de:'Delaware',fl:'Florida',ga:'Georgia',hi:'Hawaii',id:'Idaho',il:'Illinois',in:'Indiana',ia:'Iowa',ks:'Kansas',ky:'Kentucky',la:'Louisiana',me:'Maine',md:'Maryland',ma:'Massachusetts',mi:'Michigan',mn:'Minnesota',ms:'Mississippi',mo:'Missouri',mt:'Montana',ne:'Nebraska',nv:'Nevada',nh:'New Hampshire',nj:'New Jersey',nm:'New Mexico',ny:'New York',nc:'North Carolina',nd:'North Dakota',oh:'Ohio',ok:'Oklahoma',or:'Oregon',pa:'Pennsylvania',ri:'Rhode Island',sc:'South Carolina',sd:'South Dakota',tn:'Tennessee',tx:'Texas',ut:'Utah',vt:'Vermont',va:'Virginia',wa:'Washington',wv:'West Virginia',wi:'Wisconsin',wy:'Wyoming',dc:'District of Columbia'};
+const STATE_NAMES=new Set(Object.values(US_STATES).map(s=>s.toLowerCase()));
+
+function parseQuery(raw){
+  const q=raw.trim().replace(/\s+/g,' ');
+  let city=q, region='';
+  if(q.includes(',')){
+    const parts=q.split(','); city=parts[0].trim(); region=parts.slice(1).join(',').trim();
+  }else{
+    const m=q.match(/^(.*?)\s+([A-Za-z]{2})$/);          // "hunter ny"
+    if(m && US_STATES[m[2].toLowerCase()]){ city=m[1].trim(); region=m[2]; }
+    else{                                                 // "hunter new york"
+      const lower=q.toLowerCase();
+      for(const name of STATE_NAMES){
+        if(lower.endsWith(' '+name)){ region=name; city=q.slice(0,-name.length).trim(); break; }
+      }
+    }
+  }
+  const rl=region.toLowerCase();
+  const stateName = US_STATES[rl] || (STATE_NAMES.has(rl)? region.replace(/\b\w/g,c=>c.toUpperCase()) : '');
+  return {city,region,stateName};
+}
+async function omSearch(name,count){
+  const u=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=${count}&language=en&format=json`;
+  const r=await fetch(u); if(!r.ok) return [];
+  const j=await r.json(); return j.results||[];
 }
 async function tzForCoords(lat,lon){
   try{
