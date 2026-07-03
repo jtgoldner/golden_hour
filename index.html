@@ -199,7 +199,7 @@
   .bmc-btn:hover{background:var(--surface-2);border-color:var(--gold)}
   footer{
     text-align:center;color:var(--muted-2);font-size:11px;
-    padding:28px 20px 0;max-width:520px;margin:0 auto;line-height:1.7;
+    padding:20px 0 0;line-height:1.7;
   }
   footer a{color:var(--muted-2);text-decoration:underline;text-underline-offset:2px}
   footer a:hover{color:var(--muted)}
@@ -286,11 +286,12 @@
       </a>
     </div>
   </div>
+
+  <footer>
+    <p>&copy; <span id="yr"></span> Jonathan Goldner. Solar math: <a href="https://github.com/mourner/suncalc" target="_blank" rel="noopener">SunCalc</a> (MIT).</p>
+  </footer>
 </div>
 
-<footer>
-  <p>&copy; <span id="yr"></span> Jonathan Goldner. Solar math: <a href="https://github.com/mourner/suncalc" target="_blank" rel="noopener">SunCalc</a> (MIT).</p>
-</footer>
 <script>document.getElementById('yr').textContent=new Date().getFullYear();</script>
 
 <script>
