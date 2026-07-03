@@ -1,0 +1,24 @@
+# isthelight.gold — Magic Hour
+
+> Find exact golden hour and twilight times for any location. Built for photographers, filmmakers, and videographers.
+
+## What this is
+
+A single-purpose web tool that calculates morning and evening golden hour and twilight windows for any location worldwide. Enter a ZIP code, city name, or use your device's location to get precise light timing for a chosen date.
+
+## How it works
+
+- Solar geometry is computed client-side using the SunCalc algorithm (Vladimir Agafonkin, MIT license)
+- No backend, no database, no user data collected or stored
+- Geocoding uses Open-Meteo's free geocoding API (city/town names) and Zippopotam (US ZIP codes)
+- Reverse geocoding uses BigDataCloud's client-side API
+- All times are returned in the searched location's local timezone
+
+## Definitions
+
+- **Golden hour**: period when the sun is between −4° and +6° elevation. Warm, directional light. Morning and evening.
+- **Twilight**: period when the sun is between −6° and −4° elevation. Cool blue light, no harsh shadows. Morning and evening.
+
+## Author
+
+Jonathan Goldner — https://jonathangoldner.com
