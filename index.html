@@ -631,8 +631,9 @@ async function fetchWeather(lat,lon,tz,mgMid,egMid){
     const hours=j.hourly?.time||[], cover=j.hourly?.cloudcover||[];
     // find the hour index closest to each window midpoint
     function closestCover(mid){
-      const hh=mid.getHours();
-      // find index where hour string ends in "T{hh}:00"
+      // mid is a UTC Date — extract local hour via Intl to avoid UTC/local mismatch
+      const localHour=parseInt(new Intl.DateTimeFormat('en-US',{timeZone:tz,hour:'numeric',hour12:false}).format(mid),10);
+      const hh=localHour===24?0:localHour; // Intl can return 24 for midnight
       const target=`T${String(hh).padStart(2,'0')}:00`;
       const idx=hours.findIndex(t=>t.endsWith(target));
       return idx>=0 ? cover[idx] : null;
