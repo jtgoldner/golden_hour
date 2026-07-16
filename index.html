@@ -429,30 +429,38 @@ async function geocode(query){
     const tz=await tzForCoords(lat,lon);
     return {lat,lon,tz,name:p['place name'],region:p['state abbreviation']||p.state||'',country:'US'};
   }
-  // name search: parse "City, ST" / "City State", then prefer the named state
-  const {city,stateName}=parseQuery(q);
-  let results=await omSearch(city, stateName?100:10);
-  if(!results.length && city!==q) results=await omSearch(q,10); // fallback to raw
-  if(!results.length) throw new Error(`Couldn’t find “${q}”. Try “Town, ST” or a ZIP.`);
+  // name search: parse "City, ST/Province/Country", then rank accordingly
+  const {city,stateName,provinceName,countryCode}=parseQuery(q);
+  const searchCity=city||q;
+  let results=await omSearch(searchCity, (stateName||provinceName||countryCode)?100:10);
+  if(!results.length && searchCity!==q) results=await omSearch(q,10);
+  if(!results.length) throw new Error(`Couldn’t find "${q}". Try "Town, ST" or a ZIP.`);
 
   let g;
   if(stateName){
+    // US state named explicitly
     const sn=stateName.toLowerCase();
     g = results.find(r=>r.country_code==='US' && (r.admin1||'').toLowerCase()===sn)
      || results.find(r=>r.country_code==='US' && (r.admin1||'').toLowerCase().includes(sn));
-    if(!g) throw new Error(`Couldn’t find “${city}” in ${stateName}. Check the spelling?`);
+    if(!g) throw new Error(`Couldn’t find "${city}" in ${stateName}. Check the spelling?`);
+  } else if(provinceName){
+    // Canadian province named explicitly
+    const pn=provinceName.toLowerCase();
+    g = results.find(r=>r.country_code==='CA' && (r.admin1||'').toLowerCase()===pn)
+     || results.find(r=>r.country_code==='CA' && (r.admin1||'').toLowerCase().includes(pn));
+    if(!g) throw new Error(`Couldn’t find "${city}" in ${provinceName}. Check the spelling?`);
+  } else if(countryCode){
+    // Country hint (e.g. "london, canada", "paris, france")
+    g = results.find(r=>r.country_code===countryCode)
+     || results[0];
   } else {
-    // No state named — go population-first globally.
-    // Open-Meteo returns results sorted by population descending already,
-    // so results[0] is the most populous match worldwide.
-    // Only apply US bias if the query looks like it could be a small US town
-    // (i.e. no exact match exists outside the US in the top results).
+    // No qualifier — population-first globally, non-US exact match preferred
     const exact=results.filter(r=>r.name.toLowerCase()===city.toLowerCase());
     const exactNonUS=exact.filter(r=>r.country_code!=='US');
     const exactUS=exact.filter(r=>r.country_code==='US');
-    g = exactNonUS[0]    // exact non-US match (e.g. Rome, Italy) wins first
-      || exactUS[0]      // then exact US match (e.g. Rome, Georgia)
-      || results[0];     // fallback: highest population result globally
+    g = exactNonUS[0]
+      || exactUS[0]
+      || results[0];
   }
   return {lat:g.latitude,lon:g.longitude,tz:g.timezone||'UTC',
           name:g.name,region:g.admin1||'',country:g.country_code||''};
@@ -461,24 +469,54 @@ async function geocode(query){
 const US_STATES={al:'Alabama',ak:'Alaska',az:'Arizona',ar:'Arkansas',ca:'California',co:'Colorado',ct:'Connecticut',de:'Delaware',fl:'Florida',ga:'Georgia',hi:'Hawaii',id:'Idaho',il:'Illinois',in:'Indiana',ia:'Iowa',ks:'Kansas',ky:'Kentucky',la:'Louisiana',me:'Maine',md:'Maryland',ma:'Massachusetts',mi:'Michigan',mn:'Minnesota',ms:'Mississippi',mo:'Missouri',mt:'Montana',ne:'Nebraska',nv:'Nevada',nh:'New Hampshire',nj:'New Jersey',nm:'New Mexico',ny:'New York',nc:'North Carolina',nd:'North Dakota',oh:'Ohio',ok:'Oklahoma',or:'Oregon',pa:'Pennsylvania',ri:'Rhode Island',sc:'South Carolina',sd:'South Dakota',tn:'Tennessee',tx:'Texas',ut:'Utah',vt:'Vermont',va:'Virginia',wa:'Washington',wv:'West Virginia',wi:'Wisconsin',wy:'Wyoming',dc:'District of Columbia'};
 const STATE_NAMES=new Set(Object.values(US_STATES).map(s=>s.toLowerCase()));
 
+const CA_PROVINCES={ab:'Alberta',bc:'British Columbia',mb:'Manitoba',nb:'New Brunswick',nl:'Newfoundland and Labrador',ns:'Nova Scotia',nt:'Northwest Territories',nu:'Nunavut',on:'Ontario',pe:'Prince Edward Island',qc:'Quebec',sk:'Saskatchewan',yt:'Yukon'};
+const CA_PROVINCE_NAMES=new Set(Object.values(CA_PROVINCES).map(s=>s.toLowerCase()));
+
+// Country name hints — "london, canada" → countryCode CA
+const COUNTRY_HINTS={'canada':'CA','uk':'GB','england':'GB','britain':'GB','great britain':'GB','australia':'AU','france':'FR','germany':'DE','italy':'IT','spain':'ES','mexico':'MX','brazil':'BR','japan':'JP','china':'CN','india':'IN','russia':'RU','ireland':'IE','scotland':'GB','wales':'GB','netherlands':'NL','portugal':'PT','greece':'GR','poland':'PL','sweden':'SE','norway':'NO','denmark':'DK','finland':'FI','switzerland':'CH','austria':'AT','belgium':'BE','new zealand':'NZ','south africa':'ZA','argentina':'AR','colombia':'CO','chile':'CL','peru':'PE','egypt':'EG','turkey':'TR','israel':'IL','thailand':'TH','vietnam':'VN','indonesia':'ID','malaysia':'MY','philippines':'PH','south korea':'KR','taiwan':'TW'};
+
 function parseQuery(raw){
   const q=raw.trim().replace(/\s+/g,' ');
-  let city=q, region='';
+  let city=q, region='', stateName='', countryCode='', provinceName='';
+
   if(q.includes(',')){
-    const parts=q.split(','); city=parts[0].trim(); region=parts.slice(1).join(',').trim();
-  }else{
-    const m=q.match(/^(.*?)\s+([A-Za-z]{2})$/);          // "hunter ny"
+    const parts=q.split(',');
+    city=parts[0].trim();
+    region=parts.slice(1).join(',').trim();
+  } else {
+    // "hunter ny" — 2-letter abbreviation
+    const m=q.match(/^(.*?)\s+([A-Za-z]{2})$/);
     if(m && US_STATES[m[2].toLowerCase()]){ city=m[1].trim(); region=m[2]; }
-    else{                                                 // "hunter new york"
+    else if(m && CA_PROVINCES[m[2].toLowerCase()]){ city=m[1].trim(); region=m[2]; }
+    else {
+      // "hunter new york" or "london ontario"
       const lower=q.toLowerCase();
       for(const name of STATE_NAMES){
         if(lower.endsWith(' '+name)){ region=name; city=q.slice(0,-name.length).trim(); break; }
       }
+      if(!region){
+        for(const name of CA_PROVINCE_NAMES){
+          if(lower.endsWith(' '+name)){ region=name; city=q.slice(0,-name.length).trim(); break; }
+        }
+      }
     }
   }
-  const rl=region.toLowerCase();
-  const stateName = US_STATES[rl] || (STATE_NAMES.has(rl)? region.replace(/\b\w/g,c=>c.toUpperCase()) : '');
-  return {city,region,stateName};
+
+  const rl=region.toLowerCase().trim();
+
+  if(US_STATES[rl]){
+    stateName=US_STATES[rl]; countryCode='US';
+  } else if(STATE_NAMES.has(rl)){
+    stateName=region.replace(/\b\w/g,c=>c.toUpperCase()); countryCode='US';
+  } else if(CA_PROVINCES[rl]){
+    provinceName=CA_PROVINCES[rl]; countryCode='CA';
+  } else if(CA_PROVINCE_NAMES.has(rl)){
+    provinceName=region.replace(/\b\w/g,c=>c.toUpperCase()); countryCode='CA';
+  } else if(COUNTRY_HINTS[rl]){
+    countryCode=COUNTRY_HINTS[rl];
+  }
+
+  return {city, region, stateName, provinceName, countryCode};
 }
 async function omSearch(name,count){
   const u=`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(name)}&count=${count}&language=en&format=json`;
