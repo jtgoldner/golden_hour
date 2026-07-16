@@ -442,9 +442,17 @@ async function geocode(query){
      || results.find(r=>r.country_code==='US' && (r.admin1||'').toLowerCase().includes(sn));
     if(!g) throw new Error(`Couldn’t find “${city}” in ${stateName}. Check the spelling?`);
   } else {
+    // No state named — go population-first globally.
+    // Open-Meteo returns results sorted by population descending already,
+    // so results[0] is the most populous match worldwide.
+    // Only apply US bias if the query looks like it could be a small US town
+    // (i.e. no exact match exists outside the US in the top results).
     const exact=results.filter(r=>r.name.toLowerCase()===city.toLowerCase());
-    g = exact.find(r=>r.country_code==='US') || exact[0]
-      || results.find(r=>r.country_code==='US') || results[0];
+    const exactNonUS=exact.filter(r=>r.country_code!=='US');
+    const exactUS=exact.filter(r=>r.country_code==='US');
+    g = exactNonUS[0]    // exact non-US match (e.g. Rome, Italy) wins first
+      || exactUS[0]      // then exact US match (e.g. Rome, Georgia)
+      || results[0];     // fallback: highest population result globally
   }
   return {lat:g.latitude,lon:g.longitude,tz:g.timezone||'UTC',
           name:g.name,region:g.admin1||'',country:g.country_code||''};
